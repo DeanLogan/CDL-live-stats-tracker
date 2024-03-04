@@ -1,4 +1,4 @@
-# CDL Live Stat Tracker
+# CDL Live Stat Tracker (Work In Progress)
 
 This project is dedicated to providing real-time statistics for Call of Duty League (CDL) games. CDL is the esports platform for Call of Duty. 
 
@@ -16,5 +16,5 @@ The primary statistic this program tracks is the kills and deaths for each playe
 
 The program watches the screen and uses Optical Character Recognition (OCR) to identify which player has made a kill and who that player killed. It then updates this information live.
 
-![Killfeed](./imgs/killfeed.png)
+![Killfeed](./imgs/killfeed.png)  
 *Example of a killfeed during a CDL game*
