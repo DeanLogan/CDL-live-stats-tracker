@@ -29,5 +29,5 @@ def mouse_pos():
         time.sleep(0.001)  # pause for 100 milliseconds
 
 if __name__ == "__main__":
-    main()
-    # mouse_pos()
+    # main()
+    mouse_pos()

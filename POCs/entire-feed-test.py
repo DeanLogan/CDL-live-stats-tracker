@@ -1,83 +1,63 @@
 from difflib import SequenceMatcher
+import easyocr
+
 from PIL import ImageGrab
 import time
 import numpy as np
+import time
 import keyboard
+
 import threading
 import queue
-import pytesseract
-from fuzzywuzzy import fuzz
 
 # the killfeed will not only shows the players name but also the team within a clan tag that typically looks like this [TOR] Scrap, however, the OCR is not able to read the brackets that well and often confuses them wiht I so for the dictionsaries I have hard coded the names with i instead of the brackers (i in lowercase because within the similar function I set what the OCR reads to all lowercase).
 
-
 kills = {
-    "scrap": 2,
-    "cleanx": 6,
-    "insight": 2,
-    "envoy": 2,
-    "huke": 4,
-    "abuzah": 2,
-    "arcitys": 5,
-    "breszy": 5
+    "itoriscrap": 2,
+    "itoricleanx": 6,
+    "itoriinsight": 2,
+    "itorienvoy": 2,
+    "iseaihuke": 4,
+    "iseaiabuzah": 2,
+    "iseaiarcitys": 5,
+    "iseaibreszy": 5
 }
 
 deaths = {
-    "scrap": 4,
-    "cleanx": 3,
-    "insight": 4,
-    "envoy": 5,
-    "huke": 4,
-    "abuzah": 5,
-    "arcitys": 0,
-    "breszy": 3
+    "itoriscrap": 4,
+    "itoricleanx": 3,
+    "itoriinsight": 4,
+    "itorienvoy": 5,
+    "iseaihuke": 4,
+    "iseaiabuzah": 5,
+    "iseaiarcitys": 0,
+    "iseaibreszy": 3
 }
 
 
 def capture_images(q):
+    reader = easyocr.Reader(['en'])
     while True:
         img = ImageGrab.grab(bbox=(131, 610, 339, 627))
-        result = pytesseract.image_to_string(img)
-        if len(result) > 6:
-            print(result)
-
+        npArray = np.array(img)
+        result = reader.readtext(npArray)
+        if len(result) > 1:
+            q.put(result)
 
 def process_images(q):
     players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
     prev_kill = ""
     while True:
         result = q.get()
-        players = identify_names(result)
-        if len(players) > 1:
-            current_kill = players[0] + " " + players[1]
-            if current_kill != prev_kill:
-                print("------------------------------------")
-                kill(current_kill)
-                print("====================================")
-                prev_kill = current_kill
-                print(current_kill)
-                kd()
-                print("------------------------------------")
-
-# this function isn't great maybe another way of identifying the names would be better
-def identify_names(input_string):
-    identified_names = []
-    scores = []
-
-    words = input_string.lower().split()
-
-    for word in words:
-        max_score = 0
-        max_name = None
-        for name in kills:
-            score = fuzz.ratio(word, name)
-            if score > 55 and score > max_score:
-                max_score = score
-                max_name = name
-        if max_name is not None:
-            identified_names.append(max_name)
-
-    return identified_names[:2]
+        current_kill = similar(players, result[0][1]) + " " + similar(players, result[1][1])
+        if current_kill != prev_kill and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
+            print("------------------------------------")
+            kill(current_kill)
+            print("====================================")
+            prev_kill = current_kill
+            print(current_kill)
+            kd()
+            print("------------------------------------")
 
 
 def kill(current_kill):
@@ -86,10 +66,10 @@ def kill(current_kill):
     kills[killer] += 1
     deaths[killed] += 1
 
-def similar(b):
+def similar(players, b):
     most_similar = "?"
     highest_score = 0
-    for player in kills:
+    for player in players:
         score = SequenceMatcher(None, player, b.lower()).ratio()
         if score > highest_score and score > 0.60:
             highest_score = score
@@ -107,6 +87,3 @@ if __name__ == "__main__":
     process_thread = threading.Thread(target=process_images, args=(q,))
     capture_thread.start()
     process_thread.start()
-
-    capture_thread.join()
-    process_thread.join()

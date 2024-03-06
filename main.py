@@ -63,7 +63,7 @@ def read_killfeed():
             print('You Pressed A Key!')
             kd()
             break 
-        img = ImageGrab.grab(bbox=(131, 610, 339, 627)) # currently takes a section of my screen on where the killfeed is located, however the plan is to eventually change this to programatically find the killfeed on the screen
+        img = ImageGrab.grab(bbox=(131, 610, 339, 638)) # currently takes a section of my screen on where the killfeed is located, however the plan is to eventually change this to programatically find the killfeed on the screen
         npArray = np.array(img)
         result = reader.readtext(npArray)
         if len(result) > 1:
