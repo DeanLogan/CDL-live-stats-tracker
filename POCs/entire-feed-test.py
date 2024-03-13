@@ -48,24 +48,11 @@ def process_images(q):
     players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
     prev_kill = ""
     while True:
-        killed = False
         result = q.get()
-        result = list(reversed(result))
-        i = 0
-        while i < len(result)-1:
-            current_kill = similar(players, result[i+1][1]) + " " + similar(players, result[i][1])
-            if current_kill != prev_kill and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
-                if current_kill != prev_kill:
-                    print(current_kill)
-                    killed = True
-                    kill(current_kill)
-                    break
-            i += 2
-        if killed:
-            prev_kill = similar(players, result[1][1]) + " " + similar(players, result[0][1])
-            print("----")
-            print(result)
-            print("----")
+        current_kill = similar(players, result[0][1]) + " " + similar(players, result[1][1])
+        if current_kill != prev_kill and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
+            prev_kill = current_kill
+            kill(current_kill)
 
 
 def kill(current_kill):

@@ -7,29 +7,10 @@ import numpy as np
 import time
 import keyboard
 
+import threading
+import queue
+
 # the killfeed will not only shows the players name but also the team within a clan tag that typically looks like this [TOR] Scrap, however, the OCR is not able to read the brackets that well and often confuses them wiht I so for the dictionsaries I have hard coded the names with i instead of the brackers (i in lowercase because within the similar function I set what the OCR reads to all lowercase).
-
-# kills = {
-#     "itoriscrap: 0,
-#     "itoricleanx": 2,
-#     "itoriinsight": 2,
-#     "itorienvoy": 1,
-#     "iseaihuke": 4,
-#     "iseaiabuzah": 1,
-#     "iseaiarcityss": 3,
-#     "iseaibreszy": 2
-# }
-
-# deaths = {
-#     "itoriscrap": 3,
-#     "itoricleanx": 2,
-#     "itoriinsight": 2,
-#     "itorienvoy": 3,
-#     "iseaihuke": 2,
-#     "iseaiabuzah": 2,
-#     "iseaiarcitys": 0,
-#     "iseaibreszy": 1
-# }
 
 kills = {
     "itoriscrap": 2,
@@ -54,23 +35,27 @@ deaths = {
 }
 
 
-def read_killfeed():
-    players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
+def capture_images(q):
     reader = easyocr.Reader(['en'])
-    prev_kill = ""
     while True:
-        if keyboard.is_pressed('esc'):
-            print('You Pressed A Key!')
-            kd()
-            break 
-        img = ImageGrab.grab(bbox=(131, 610, 339, 638)) # currently takes a section of my screen on where the killfeed is located, however the plan is to eventually change this to programatically find the killfeed on the screen
+        img = ImageGrab.grab(bbox=(131, 610, 339, 638))
         npArray = np.array(img)
         result = reader.readtext(npArray)
+        if len(result) > 1:
+            q.put(result)
+
+def process_images(q):
+    players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
+    prev_kill = ""
+    while True:
+        killed = False
+        result = q.get()
         if len(result) > 1:
             current_kill = similar(players, result[0][1]) + " " + similar(players, result[1][1])
             if current_kill != prev_kill and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
                 prev_kill = current_kill
                 kill(current_kill)
+
 
 def kill(current_kill):
     killer = current_kill.split(" ")[0]
@@ -94,6 +79,10 @@ def kd():
         print(player + " " + str(kills[player]) + " / " + str(deaths[player]))
 
 if __name__ == "__main__":
-    read_killfeed()
-    # players=["scrap", "cleanx", "insight", "envoy", "huke", "abuzah", "arcitys"]
-    # print(similar(players, "ITORI Clean"))
+    q = queue.Queue()
+    capture_thread_1 = threading.Thread(target=capture_images, args=(q,))
+    capture_thread_2 = threading.Thread(target=capture_images, args=(q,))
+    process_thread = threading.Thread(target=process_images, args=(q,))
+    capture_thread_1.start()
+    capture_thread_2.start()
+    process_thread.start()
