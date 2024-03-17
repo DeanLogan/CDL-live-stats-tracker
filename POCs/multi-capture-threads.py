@@ -1,11 +1,9 @@
 from difflib import SequenceMatcher
+from expiringdict import ExpiringDict
 import easyocr
 
 from PIL import ImageGrab
-import time
 import numpy as np
-import time
-import keyboard
 
 import threading
 import queue
@@ -34,11 +32,24 @@ deaths = {
     "iseaibreszy": 3
 }
 
+killfeed = ExpiringDict(max_len=9, max_age_seconds=5)
 
-def capture_images(q):
+
+def capture_killfeed_first(q):
     reader = easyocr.Reader(['en'])
+    print("Starting 1")
     while True:
-        img = ImageGrab.grab(bbox=(131, 610, 339, 638))
+        img = ImageGrab.grab(bbox=(131, 610, 339, 634))
+        npArray = np.array(img)
+        result = reader.readtext(npArray)
+        if len(result) > 1:
+            q.put(result)
+
+def capture_killfeed_second(q):
+    reader = easyocr.Reader(['en'])
+    print("Starting 2")
+    while True:
+        img = ImageGrab.grab(bbox=(131, 589, 330, 610))
         npArray = np.array(img)
         result = reader.readtext(npArray)
         if len(result) > 1:
@@ -46,14 +57,13 @@ def capture_images(q):
 
 def process_images(q):
     players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
-    prev_kill = ""
     while True:
-        killed = False
         result = q.get()
         if len(result) > 1:
             current_kill = similar(players, result[0][1]) + " " + similar(players, result[1][1])
-            if current_kill != prev_kill and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
-                prev_kill = current_kill
+            if (not killfeed.get(current_kill, False)) and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
+                killfeed[current_kill] = True
+                print(current_kill)
                 kill(current_kill)
 
 
@@ -80,8 +90,8 @@ def kd():
 
 if __name__ == "__main__":
     q = queue.Queue()
-    capture_thread_1 = threading.Thread(target=capture_images, args=(q,))
-    capture_thread_2 = threading.Thread(target=capture_images, args=(q,))
+    capture_thread_1 = threading.Thread(target=capture_killfeed_first, args=(q,))
+    capture_thread_2 = threading.Thread(target=capture_killfeed_second, args=(q,))
     process_thread = threading.Thread(target=process_images, args=(q,))
     capture_thread_1.start()
     capture_thread_2.start()
