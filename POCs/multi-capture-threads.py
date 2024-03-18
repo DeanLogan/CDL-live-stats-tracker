@@ -1,4 +1,5 @@
 from difflib import SequenceMatcher
+import sys
 from expiringdict import ExpiringDict
 import easyocr
 
@@ -6,6 +7,7 @@ from PIL import ImageGrab
 import numpy as np
 
 import threading
+import keyboard
 import queue
 
 # the killfeed will not only shows the players name but also the team within a clan tag that typically looks like this [TOR] Scrap, however, the OCR is not able to read the brackets that well and often confuses them wiht I so for the dictionsaries I have hard coded the names with i instead of the brackers (i in lowercase because within the similar function I set what the OCR reads to all lowercase).
@@ -34,22 +36,9 @@ deaths = {
 
 killfeed = ExpiringDict(max_len=9, max_age_seconds=5)
 
-
-def capture_killfeed_first(q):
-    reader = easyocr.Reader(['en'])
-    print("Starting 1")
+def capture_killfeed(q, reader, bbox, threadID):
     while True:
-        img = ImageGrab.grab(bbox=(131, 610, 339, 634))
-        npArray = np.array(img)
-        result = reader.readtext(npArray)
-        if len(result) > 1:
-            q.put(result)
-
-def capture_killfeed_second(q):
-    reader = easyocr.Reader(['en'])
-    print("Starting 2")
-    while True:
-        img = ImageGrab.grab(bbox=(131, 589, 330, 610))
+        img = ImageGrab.grab(bbox=bbox)
         npArray = np.array(img)
         result = reader.readtext(npArray)
         if len(result) > 1:
@@ -81,7 +70,6 @@ def similar(players, b):
         if score > highest_score and score > 0.60:
             highest_score = score
             most_similar = player
-
     return most_similar
 
 def kd():
@@ -90,9 +78,14 @@ def kd():
 
 if __name__ == "__main__":
     q = queue.Queue()
-    capture_thread_1 = threading.Thread(target=capture_killfeed_first, args=(q,))
-    capture_thread_2 = threading.Thread(target=capture_killfeed_second, args=(q,))
-    process_thread = threading.Thread(target=process_images, args=(q,))
+    reader = easyocr.Reader(['en'])
+    capture_thread_1 = threading.Thread(target=capture_killfeed, args=(q,reader, (131, 610, 339, 634),1,), daemon=True)
+    capture_thread_2 = threading.Thread(target=capture_killfeed, args=(q,reader, (131, 589, 330, 610),2,), daemon=True)
+    process_thread = threading.Thread(target=process_images, args=(q,), daemon=True)
     capture_thread_1.start()
     capture_thread_2.start()
     process_thread.start()
+    while True:
+        if keyboard.is_pressed('esc'):
+            kd()
+            sys.exit()
