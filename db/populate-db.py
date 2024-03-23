@@ -79,7 +79,7 @@ player_info = [
     ("CleanX", "Jønsson, Tobias", "Denmark", "Toronto Ultra"),
     ("Envoy", "Hannon, Dylan", "United States", "Toronto Ultra"),
     ("Insight", "Craven, Jamie", "England", "Toronto Ultra"),
-    ("Scrappy", "Ernst, Thomas", "United States", "Toronto Ultra"),
+    ("Scrap", "Ernst, Thomas", "United States", "Toronto Ultra"),
 
     ("Attach", "Price, Dillon", "United States", "Vegas Legion"),
     ("Gio", "Webster, Giovanni", "United States", "Vegas Legion"),

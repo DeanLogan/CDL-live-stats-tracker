@@ -36,7 +36,7 @@ deaths = {
 
 killfeed = ExpiringDict(max_len=9, max_age_seconds=5)
 
-def capture_killfeed(q, reader, bbox, threadID):
+def capture_killfeed(q, reader, bbox):
     while True:
         img = ImageGrab.grab(bbox=bbox)
         npArray = np.array(img)
@@ -79,8 +79,8 @@ def kd():
 if __name__ == "__main__":
     q = queue.Queue()
     reader = easyocr.Reader(['en'])
-    capture_thread_1 = threading.Thread(target=capture_killfeed, args=(q,reader, (131, 610, 339, 634),1,), daemon=True)
-    capture_thread_2 = threading.Thread(target=capture_killfeed, args=(q,reader, (131, 589, 330, 610),2,), daemon=True)
+    capture_thread_1 = threading.Thread(target=capture_killfeed, args=(q,reader, (144, 616, 350, 635),), daemon=True)
+    capture_thread_2 = threading.Thread(target=capture_killfeed, args=(q,reader, (144, 595, 350, 615),), daemon=True)
     process_thread = threading.Thread(target=process_images, args=(q,), daemon=True)
     capture_thread_1.start()
     capture_thread_2.start()
