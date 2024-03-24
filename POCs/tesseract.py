@@ -36,10 +36,10 @@ deaths = {
 
 def capture_images(q):
     while True:
-        img = ImageGrab.grab(bbox=(131, 610, 339, 627))
+        img = ImageGrab.grab(bbox=(144, 616, 350, 635))
         result = pytesseract.image_to_string(img)
         if len(result) > 6:
-            print(result)
+            q.put(result)
 
 
 def process_images(q):

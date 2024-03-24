@@ -99,7 +99,6 @@ def process_images(q):
     while True:
         result = q.get()
         if len(result) > 1:
-            print("processing image")
             current_kill = similar(kills, result[0][1]) + " " + similar(kills, result[1][1])
             if (not killfeed.get(current_kill, False)) and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
                 killfeed[current_kill] = True
