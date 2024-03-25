@@ -1,15 +1,21 @@
-# Use an image with X11 support
-FROM dorowu/ubuntu-desktop-lxde-vnc:bionic
+FROM ubuntu:latest
+
+ENV DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update && \
+    apt-get install -y \
+    python3 \
+    python3-pip \
+    ffmpeg \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
-RUN apt-get update && apt-get install -y python3 python3-pip tesseract-ocr
+COPY ./POCs/docker-test.py /app/
 
-COPY requirements.txt ./
-RUN pip3 install --no-cache-dir -r requirements.txt
+COPY requirements.txt /app/
 
-COPY . .
+RUN pip3 install -r /app/requirements.txt
 
-CMD [ "python3", "./tesseract.py" ]
-
-# docker run -e DISPLAY=host.docker.internal:0.0 your_image_name
+ENTRYPOINT ["python3", "docker-test.py"]
