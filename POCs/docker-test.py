@@ -1,6 +1,6 @@
 import subprocess
 from difflib import SequenceMatcher
-from PIL import ImageGrab
+from PIL import ImageGrab, Image
 import time
 import numpy as np
 import keyboard
@@ -8,7 +8,9 @@ import threading
 import queue
 import pytesseract
 from fuzzywuzzy import fuzz
-import cv2
+from selenium import webdriver
+from selenium import webdriver
+from selenium.webdriver.firefox.options import Options
 
 def stream_youtube_video():
     video_url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
@@ -53,23 +55,30 @@ deaths = {
 
 
 def capture_images(q):
-    # Open the video stream using ffmpeg
-    cap = cv2.VideoCapture("https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s")
+    print("capturing images starting")
+
+    options = Options()
+    options.headless = True
+    driver = webdriver.Firefox(options=options)
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
+    driver.get(url)
+    print("video loaded")
+    # Wait for the video to load
+    time.sleep(5)
 
     # bounding box (x1, y1, x2, y2)
     x1, y1, x2, y2 = 144, 616, 350, 635
 
-    while cap.isOpened():
-        ret, frame = cap.read()
-        if ret:
-            roi = frame[y1:y2, x1:x2]
-            result = pytesseract.image_to_string(roi)
-            if len(result) > 6:
-                q.put(result)
-        else:
-            break
-
-    cap.release()
+    while True:
+        screenshot = driver.get_screenshot_as_png()
+        image = Image.open(io.BytesIO(screenshot))
+        roi = image.crop((x1, y1, x2, y2))
+        frame = np.array(roi)
+        result = pytesseract.image_to_string(frame, lang='eng')
+        print(result)
+        if len(result) > 6:
+            q.put(result)
+        time.sleep(0.1)
 
 
 def process_images(q):
@@ -77,6 +86,7 @@ def process_images(q):
     prev_kill = ""
     while True:
         result = q.get()
+        print(result)
         players = identify_names(result)
         if len(players) > 1:
             current_kill = players[0] + " " + players[1]
