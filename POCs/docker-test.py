@@ -1,3 +1,4 @@
+import io
 import subprocess
 from difflib import SequenceMatcher
 from PIL import ImageGrab, Image
@@ -59,7 +60,7 @@ def capture_images(q):
 
     options = Options()
     options.headless = True
-    driver = webdriver.Firefox(options=options)
+    driver = webdriver.Firefox()
     url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
     driver.get(url)
     print("video loaded")

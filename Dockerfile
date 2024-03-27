@@ -9,6 +9,7 @@ RUN apt-get update && \
     ffmpeg \
     wget \
     libx11-6 \
+    xvfb \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install geckodriver
@@ -18,12 +19,12 @@ RUN wget https://github.com/mozilla/geckodriver/releases/download/v0.34.0/geckod
     chmod +x geckodriver && \
     mv geckodriver /usr/local/bin/
 
+RUN apt-get update && apt-get install -y wget bzip2 libxtst6 libgtk-3-0 libx11-xcb-dev libdbus-glib-1-2 libxt6 libpci-dev && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install -y firefox
+
 WORKDIR /app
 
 COPY ./POCs/docker-test.py /app/
 
-COPY requirements.txt /app/
-
-RUN pip3 install -r /app/requirements.txt
-
-ENTRYPOINT ["python3", "docker-test.py"]
+ENTRYPOINT ["xvfb-run", "--", "python3", "docker-test.py"]
