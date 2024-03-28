@@ -13,24 +13,10 @@ from selenium import webdriver
 from selenium import webdriver
 from selenium.webdriver.firefox.options import Options
 
-def stream_youtube_video():
-    video_url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
-    ffmpeg_command = f"youtube-dl -q -o - {video_url} | ffmpeg -i pipe:0 -f mp4 -vcodec rawvideo -"
-
-    process = subprocess.Popen(ffmpeg_command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-    while True:
-        output = process.stdout.readline()
-        if output == b'' and process.poll() is not None:
-            break
-        if output:
-            print(output.strip())
-    
-    process.stdout.close()
-    process.stderr.close()
-
 
 # the killfeed will not only shows the players name but also the team within a clan tag that typically looks like this [TOR] Scrap, however, the OCR is not able to read the brackets that well and often confuses them wiht I so for the dictionsaries I have hard coded the names with i instead of the brackers (i in lowercase because within the similar function I set what the OCR reads to all lowercase).
+
+driver = None
 
 kills = {
     "scrap": 2,
@@ -56,25 +42,17 @@ deaths = {
 
 
 def capture_images(q):
-    print("capturing images starting")
-
-    options = Options()
-    options.headless = True
-    driver = webdriver.Firefox()
-    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
-    driver.get(url)
-    print("video loaded")
-    # Wait for the video to load
-    time.sleep(5)
-
+    print("starting capture images")
     # bounding box (x1, y1, x2, y2)
     x1, y1, x2, y2 = 144, 616, 350, 635
 
     while True:
         screenshot = driver.get_screenshot_as_png()
         image = Image.open(io.BytesIO(screenshot))
-        roi = image.crop((x1, y1, x2, y2))
-        frame = np.array(roi)
+        #roi = image.crop((x1, y1, x2, y2))
+        #frame = np.array(roi)
+        image.show()
+        frame = np.array(image)
         result = pytesseract.image_to_string(frame, lang='eng')
         print(result)
         if len(result) > 6:
@@ -144,12 +122,25 @@ def kd():
 
 if __name__ == "__main__":
     print("starting program")
-    stream_youtube_video()
     q = queue.Queue()
-    capture_thread = threading.Thread(target=capture_images, args=(q,))
+
+    print("capturing images starting")
+    options = Options()
+    options.headless = True
+    driver = webdriver.Firefox()
+    driver.install_addon('uBlock0_1.56.1rc5.firefox.signed.xpi', temporary=True) # adding ublock ad blocker
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
+    driver.get(url)
+    print("video loaded")
+    time.sleep(3) # Wait for the video to load
+
+    capture_thread_1 = threading.Thread(target=capture_images, args=(q,))
+    # capture_thread_2 = threading.Thread(target=capture_images, args=(q,))
     process_thread = threading.Thread(target=process_images, args=(q,))
-    capture_thread.start()
+    capture_thread_1.start()
+    # capture_thread_2.start()
     process_thread.start()
 
-    capture_thread.join()
+    capture_thread_1.join()
+    # capture_thread_2.join()
     process_thread.join()

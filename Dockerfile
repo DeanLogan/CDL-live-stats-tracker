@@ -10,6 +10,7 @@ RUN apt-get update && \
     wget \
     libx11-6 \
     xvfb \
+    tesseract-ocr \
     && rm -rf /var/lib/apt/lists/*
 
 # Download and install geckodriver
@@ -27,4 +28,10 @@ WORKDIR /app
 
 COPY ./POCs/docker-test.py /app/
 
-ENTRYPOINT ["xvfb-run", "--", "python3", "docker-test.py"]
+COPY requirements.txt /app/
+
+RUN python3 -m pip install -r /app/requirements.txt
+
+ENTRYPOINT ["/bin/bash"]
+
+# xvfb-run -- python3 docker-test.py
