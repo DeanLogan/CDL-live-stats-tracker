@@ -10,9 +10,10 @@ import queue
 import pytesseract
 from fuzzywuzzy import fuzz
 from selenium import webdriver
-from selenium import webdriver
+from selenium.webdriver.common.by import By
 from selenium.webdriver.firefox.options import Options
-
+from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 # the killfeed will not only shows the players name but also the team within a clan tag that typically looks like this [TOR] Scrap, however, the OCR is not able to read the brackets that well and often confuses them wiht I so for the dictionsaries I have hard coded the names with i instead of the brackers (i in lowercase because within the similar function I set what the OCR reads to all lowercase).
 
@@ -49,9 +50,9 @@ def capture_images(q):
     while True:
         screenshot = driver.get_screenshot_as_png()
         image = Image.open(io.BytesIO(screenshot))
-        #roi = image.crop((x1, y1, x2, y2))
-        #frame = np.array(roi)
-        image.show()
+        # roi = image.crop((x1, y1, x2, y2))
+        # frame = np.array(roi)
+        # image.show()
         frame = np.array(image)
         result = pytesseract.image_to_string(frame, lang='eng')
         print(result)
@@ -120,6 +121,17 @@ def kd():
     for player in kills:
         print(player + " " + str(kills[player]) + " / " + str(deaths[player]))
 
+def testing_selecting_text():
+    # bounding box (x1, y1, x2, y2)
+    x1, y1, x2, y2 = 144, 616, 350, 635
+    screenshot = driver.get_screenshot_as_png()
+    image = Image.open(io.BytesIO(screenshot))
+    roi = image.crop((x1, y1, x2, y2))
+    frame = np.array(roi)
+    image.show()
+    result = pytesseract.image_to_string(frame, lang='eng')
+    print(result)
+
 if __name__ == "__main__":
     print("starting program")
     q = queue.Queue()
@@ -129,18 +141,40 @@ if __name__ == "__main__":
     options.headless = True
     driver = webdriver.Firefox()
     driver.install_addon('uBlock0_1.56.1rc5.firefox.signed.xpi', temporary=True) # adding ublock ad blocker
-    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=61&t=127s"
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64"
     driver.get(url)
     print("video loaded")
     time.sleep(3) # Wait for the video to load
 
-    capture_thread_1 = threading.Thread(target=capture_images, args=(q,))
-    # capture_thread_2 = threading.Thread(target=capture_images, args=(q,))
-    process_thread = threading.Thread(target=process_images, args=(q,))
-    capture_thread_1.start()
-    # capture_thread_2.start()
-    process_thread.start()
+    # click youtubes cookie agreement
+    print("clicking cookie agreement")
+    button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/ytd-consent-bump-v2-lightbox/tp-yt-paper-dialog/div[4]/div[2]/div[6]/div[1]/ytd-button-renderer[2]/yt-button-shape/button')
+    button.click()
 
-    capture_thread_1.join()
+    time.sleep(2) # Wait for agreement to be rejected and then click the play button
+
+    # plays yt video as autoplay is off
+    print("playing video")
+    button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[1]/div[2]/div/div/ytd-player/div/div/div[6]/button')
+    button.click()
+
+    time.sleep(1) # Wait for the video to start playing
+
+    # press the f q to go full screen
+    actions = ActionChains(driver)
+    actions.send_keys('f').perform()
+
+    time.sleep(0.5) # Wait for full screen animation
+
+    testing_selecting_text()
+
+    # capture_thread_1 = threading.Thread(target=capture_images, args=(q,))
+    # capture_thread_2 = threading.Thread(target=capture_images, args=(q,))
+    # process_thread = threading.Thread(target=process_images, args=(q,))
+    # capture_thread_1.start()
+    # capture_thread_2.start()
+    # process_thread.start()
+
+    # capture_thread_1.join()
     # capture_thread_2.join()
-    process_thread.join()
+    # process_thread.join()
