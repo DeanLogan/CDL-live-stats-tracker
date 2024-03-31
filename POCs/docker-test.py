@@ -1,43 +1,87 @@
 import io
-import subprocess
-from difflib import SequenceMatcher
-from PIL import ImageGrab, Image
 import time
-import numpy as np
+import queue
+import sqlite3
 import keyboard
 import threading
-import queue
+import subprocess
+import numpy as np
 import pytesseract
 from fuzzywuzzy import fuzz
 from selenium import webdriver
+from PIL import ImageGrab, Image
+from difflib import SequenceMatcher
+from expiringdict import ExpiringDict
 from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.common.action_chains import ActionChains
-from selenium.webdriver.common.keys import Keys
 
-# the killfeed will not only shows the players name but also the team within a clan tag that typically looks like this [TOR] Scrap, however, the OCR is not able to read the brackets that well and often confuses them wiht I so for the dictionsaries I have hard coded the names with i instead of the brackers (i in lowercase because within the similar function I set what the OCR reads to all lowercase).
+killfeed = ExpiringDict(max_len=9, max_age_seconds=5.5)
 
-kills = {
-    "scrap": 2,
-    "cleanx": 6,
-    "insight": 2,
-    "envoy": 2,
-    "huke": 4,
-    "abuzah": 2,
-    "arcitys": 5,
-    "breszy": 5
+kills = {}
+
+deaths = {}
+
+CLAN_TAGS = {
+    "toronto ultra": "itori",
+    "seattle surge": "iseai",
+    "los angeles thieves": "ilati",
+    "atlanta faze": "iatli",
+    "optic texas": "itxi",
+    "new york subliners": "inyi",
+    "vegas legion": "ilvi",
+    "carolina royal ravens": "icari",
+    "los angeles guerrillas": "ilagi",
+    "boston breach": "ibosi",
+    "miami heretics": "imiai",
+    "minnesota rokkr": "imini",
 }
 
-deaths = {
-    "scrap": 4,
-    "cleanx": 3,
-    "insight": 4,
-    "envoy": 5,
-    "huke": 4,
-    "abuzah": 5,
-    "arcitys": 0,
-    "breszy": 3
-}
+def get_players(reader, team1_tag, team2_tag):
+    conn = sqlite3.connect('cdl-database.db')
+    db = conn.cursor()
+    db.execute("SELECT handle FROM Player")
+    players = [name[0].lower() for name in db.fetchall()]
+    conn.close()
+
+    team1_players = get_text(reader, (203, 310, 537, 326)) # TODO update these values
+    team2_players = get_text(reader, (940, 310, 1274, 326)) # TODO update these values
+
+    add_players_to_dicts(team1_players, players, team1_tag)
+    add_players_to_dicts(team2_players, players, team2_tag)
+
+def add_players_to_dicts(team_players, players, tag):
+    for player in team_players:
+        player_name = similar(players, player[1])
+        if player_name != "?":
+            player_name = (tag + player_name).lower()
+            kills[player_name] = 0
+            deaths[player_name] = 0
+
+def get_teams(driver):
+    conn = sqlite3.connect('cdl-database.db')
+    db = conn.cursor()
+    db.execute("SELECT name FROM Team")
+    team_names = [name[0].lower() for name in db.fetchall()]
+    conn.close()
+    while True:
+        try:
+            team1 = similar(team_names, get_text(driver, (200, 212, 537, 239))[0][1]) # TODO update these values
+            team2 = similar(team_names, get_text(driver, (940, 212, 1275, 242))[0][1]) # TODO update these values
+        except:
+            continue
+        if team1 != "?" and team2 != "?":
+            break
+    return team1, team2
+
+def get_text(driver, bbox):
+    screenshot = driver.get_screenshot_as_png()
+    image = Image.open(io.BytesIO(screenshot))
+    roi = image.crop(bbox)
+    frame = np.array(roi)
+    result = pytesseract.image_to_string(frame, lang='eng')
+    return result
 
 def setup_browser():
     print("opening browser")
@@ -45,17 +89,17 @@ def setup_browser():
     options.headless = True
     driver = webdriver.Firefox()
     driver.install_addon('uBlock0_1.56.1rc5.firefox.signed.xpi', temporary=True) # adding ublock ad blocker
-    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64&t=30s"
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64" # add this to test for double kills, wait until video is at 3:03 and compare killfeed "&t=160s"
     driver.get(url)
     print("video loaded")
-    time.sleep(3) # Wait for the video to load
+    time.sleep(3) # waits for the video to load
 
     # click youtubes cookie agreement
     print("clicking cookie agreement")
     button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/ytd-consent-bump-v2-lightbox/tp-yt-paper-dialog/div[4]/div[2]/div[6]/div[1]/ytd-button-renderer[2]/yt-button-shape/button')
     button.click()
 
-    time.sleep(5) # Wait for agreement to be rejected and then click the play button
+    time.sleep(5) # wait for agreement to be rejected and then click the play button
 
     # plays yt video as autoplay is off
     print("playing video")
@@ -87,7 +131,7 @@ def process_images(q):
     prev_kill = ""
     while True:
         result = q.get()
-        players = identify_names(result)
+        players = similar(result)
         if len(players) > 1:
             current_kill = players[0] + " " + players[1]
             if current_kill != prev_kill:
