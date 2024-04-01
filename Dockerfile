@@ -30,6 +30,8 @@ COPY ./POCs/docker-test.py /app/
 
 COPY requirements.txt /app/
 
+COPY uBlock0_1.56.1rc5.firefox.signed.xpi /app/
+
 RUN python3 -m pip install -r /app/requirements.txt
 
 ENTRYPOINT ["/bin/bash"]

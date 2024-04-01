@@ -15,13 +15,32 @@ from expiringdict import ExpiringDict
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.firefox.options import Options
+from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 
 killfeed = ExpiringDict(max_len=9, max_age_seconds=5.5)
 
-kills = {}
+kills = {
+    "scrap": 2,
+    "cleanx": 6,
+    "insight": 2,
+    "envoy": 2,
+    "huke": 4,
+    "abuzah": 2,
+    "arcitys": 5,
+    "breszy": 5
+}
 
-deaths = {}
+deaths = {
+    "scrap": 4,
+    "cleanx": 3,
+    "insight": 4,
+    "envoy": 5,
+    "huke": 4,
+    "abuzah": 5,
+    "arcitys": 0,
+    "breszy": 3
+}
 
 CLAN_TAGS = {
     "toronto ultra": "itori",
@@ -79,8 +98,7 @@ def get_text(driver, bbox):
     screenshot = driver.get_screenshot_as_png()
     image = Image.open(io.BytesIO(screenshot))
     roi = image.crop(bbox)
-    frame = np.array(roi)
-    result = pytesseract.image_to_string(frame, lang='eng')
+    result = pytesseract.image_to_string(roi, lang='eng')
     return result
 
 def setup_browser():
@@ -88,23 +106,34 @@ def setup_browser():
     options = Options()
     options.headless = True
     driver = webdriver.Firefox()
+    driver.set_window_size(1920, 1080)
     driver.install_addon('uBlock0_1.56.1rc5.firefox.signed.xpi', temporary=True) # adding ublock ad blocker
-    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64" # add this to test for double kills, wait until video is at 3:03 and compare killfeed "&t=160s"
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64&t=160s" # add this to test for double kills, wait until video is at 3:03 and compare killfeed "&t=160s"
     driver.get(url)
     print("video loaded")
     time.sleep(3) # waits for the video to load
 
     # click youtubes cookie agreement
     print("clicking cookie agreement")
-    button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/ytd-consent-bump-v2-lightbox/tp-yt-paper-dialog/div[4]/div[2]/div[6]/div[1]/ytd-button-renderer[2]/yt-button-shape/button')
-    button.click()
+    while True:
+        try:
+            button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/ytd-consent-bump-v2-lightbox/tp-yt-paper-dialog/div[4]/div[2]/div[6]/div[1]/ytd-button-renderer[2]/yt-button-shape/button')
+            button.click()
+            break
+        except NoSuchElementException:
+            time.sleep(1)
 
     time.sleep(5) # wait for agreement to be rejected and then click the play button
 
     # plays yt video as autoplay is off
     print("playing video")
-    button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[1]/div[2]/div/div/ytd-player/div/div/div[6]/button')
-    button.click()
+    while True:
+        try:
+            button = driver.find_element(by=By.XPATH, value='/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[1]/div[2]/div/div/ytd-player/div/div/div[6]/button')
+            button.click()
+            break
+        except NoSuchElementException:
+            time.sleep(1)
 
     actions = ActionChains(driver)
     actions.send_keys('m').perform() # press the m key to mute the video
@@ -116,13 +145,8 @@ def setup_browser():
 
 def capture_images(q, bbox, driver):
     print("starting capture images")
-
     while True:
-        screenshot = driver.get_screenshot_as_png()
-        image = Image.open(io.BytesIO(screenshot))
-        roi = image.crop(bbox)
-        frame = np.array(roi)
-        result = pytesseract.image_to_string(frame, lang='eng')
+        result = get_text(driver, bbox)
         if len(result) > 6:
             q.put(result)
 
@@ -131,7 +155,7 @@ def process_images(q):
     prev_kill = ""
     while True:
         result = q.get()
-        players = similar(result)
+        players = identify_names(result)
         if len(players) > 1:
             current_kill = players[0] + " " + players[1]
             if current_kill != prev_kill:
@@ -212,13 +236,13 @@ def testing_selecting_text():
     print(result)
 
 if __name__ == "__main__":
-    print("starting program")
+    print("starting program - changes made v3")
     q = queue.Queue()
 
     driver = setup_browser()
 
-    capture_thread_1 = threading.Thread(target=capture_images, args=(q,(44, 640, 365, 667), driver,))
-    capture_thread_2 = threading.Thread(target=capture_images, args=(q,(44, 613, 365, 640), driver,))
+    capture_thread_1 = threading.Thread(target=capture_images, args=(q,(44, 637, 365, 667), driver,))
+    capture_thread_2 = threading.Thread(target=capture_images, args=(q,(44, 610, 365, 640), driver,))
     process_thread = threading.Thread(target=process_images, args=(q,))
 
     capture_thread_1.start()
