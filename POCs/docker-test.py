@@ -21,25 +21,25 @@ from selenium.webdriver.common.action_chains import ActionChains
 killfeed = ExpiringDict(max_len=9, max_age_seconds=5.5)
 
 kills = {
-    "scrap": 2,
-    "cleanx": 6,
-    "insight": 2,
-    "envoy": 2,
-    "huke": 4,
-    "abuzah": 2,
-    "arcitys": 5,
-    "breszy": 5
+    "[tor]scrap": 2,
+    "[tor]cleanx": 6,
+    "[tor]insight": 2,
+    "[tor]envoy": 2,
+    "[sea]huke": 4,
+    "[sea]abuzah": 2,
+    "[sea]arcitys": 5,
+    "[sea]breszy": 5
 }
 
 deaths = {
-    "scrap": 4,
-    "cleanx": 3,
-    "insight": 4,
-    "envoy": 5,
-    "huke": 4,
-    "abuzah": 5,
-    "arcitys": 0,
-    "breszy": 3
+    "[tor]scrap": 4,
+    "[tor]cleanx": 3,
+    "[tor]insight": 4,
+    "[tor]envoy": 5,
+    "[sea]huke": 4,
+    "[sea]abuzah": 5,
+    "[sea]arcitys": 0,
+    "[sea]breszy": 3
 }
 
 CLAN_TAGS = {
@@ -98,6 +98,7 @@ def get_text(driver, bbox):
     screenshot = driver.get_screenshot_as_png()
     image = Image.open(io.BytesIO(screenshot))
     roi = image.crop(bbox)
+    image = image.convert('L')
     result = pytesseract.image_to_string(roi, lang='eng')
     return result
 
@@ -108,7 +109,7 @@ def setup_browser():
     driver = webdriver.Firefox()
     driver.set_window_size(1920, 1080)
     driver.install_addon('uBlock0_1.56.1rc5.firefox.signed.xpi', temporary=True) # adding ublock ad blocker
-    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64&t=160s" # add this to test for double kills, wait until video is at 3:03 and compare killfeed "&t=160s"
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64&t=164s" # add this to test for double kills, wait until video is at 3:03 and compare killfeed "&t=164s"
     driver.get(url)
     print("video loaded")
     time.sleep(3) # waits for the video to load
@@ -139,28 +140,36 @@ def setup_browser():
     actions.send_keys('m').perform() # press the m key to mute the video
     actions.send_keys('f').perform() # press the f key to go full screen
 
-    time.sleep(0.5) # Wait for full screen animation
+    time.sleep(0.5) # wait for full screen animation
 
     return driver
 
-def capture_images(q, bbox, driver):
+def capture_images(q, bboxes, driver):
     print("starting capture images")
     while True:
-        result = get_text(driver, bbox)
-        if len(result) > 6:
-            q.put(result)
+        screenshot = driver.get_screenshot_as_png()
+        image = Image.open(io.BytesIO(screenshot))
+        for bbox in bboxes:
+                roi = image.crop(bbox)
+                # image = image.convert('L')
+                result = pytesseract.image_to_string(roi, lang='eng')
+                if len(result) > 6:
+                    q.put(result)
 
 
 def process_images(q):
-    prev_kill = ""
     while True:
         result = q.get()
-        players = identify_names(result)
-        if len(players) > 1:
-            current_kill = players[0] + " " + players[1]
-            if current_kill != prev_kill:
+        # resultSplit = identify_names(result)
+        # if len(resultSplit) > 1:
+        #     print(resultSplit)
+        #    current_kill = resultSplit[0] + " " + resultSplit[1]
+        resultSplit = result.split("[")
+        if len(resultSplit) > 2:
+            current_kill = similar(resultSplit[1]) + " " + similar(resultSplit[2])
+            if (not killfeed.get(current_kill, False)) and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
                 kill(current_kill)
-                prev_kill = current_kill
+                killfeed[current_kill] = True
                 print(current_kill)
 
 # this function isn't great maybe another way of identifying the names would be better
@@ -182,6 +191,19 @@ def identify_names(input_string):
 
     return identified_names[:2]
 
+# temp function to test usage of sets and list comprehension
+def identify_names2(input_string):
+    words = input_string.lower().split()
+    kills_set = set(kills)
+
+    identified_names = []
+    for word in words:
+        max_score_name = max((fuzz.ratio(word, name), name) for name in kills_set)
+        if max_score_name[0] > 60:
+            identified_names.append(max_score_name[1])
+
+    return identified_names[:2]
+
 
 def kill(current_kill):
     killer = current_kill.split(" ")[0]
@@ -192,12 +214,12 @@ def kill(current_kill):
 def similar(b):
     most_similar = "?"
     highest_score = 0
+    b = b.lower().replace(" ", "")
     for player in kills:
-        score = SequenceMatcher(None, player, b.lower()).ratio()
+        score = SequenceMatcher(None, player, b).ratio()
         if score > highest_score and score > 0.60:
             highest_score = score
             most_similar = player
-
     return most_similar
 
 def kd():
@@ -241,14 +263,19 @@ if __name__ == "__main__":
 
     driver = setup_browser()
 
-    capture_thread_1 = threading.Thread(target=capture_images, args=(q,(44, 637, 365, 667), driver,))
-    capture_thread_2 = threading.Thread(target=capture_images, args=(q,(44, 610, 365, 640), driver,))
-    process_thread = threading.Thread(target=process_images, args=(q,))
+    bboxes = [(44, 637, 365, 667),(44, 610, 365, 640)]
+
+    capture_thread_1 = threading.Thread(target=capture_images, args=(q,[(44, 637, 365, 667)], driver,))
+    capture_thread_2 = threading.Thread(target=capture_images, args=(q,[(44, 610, 365, 640)], driver,))
+    process_thread_1 = threading.Thread(target=process_images, args=(q,))
+    process_thread_2 = threading.Thread(target=process_images, args=(q,))
 
     capture_thread_1.start()
     capture_thread_2.start()
-    process_thread.start()
+    process_thread_1.start()
+    process_thread_2.start()
 
     capture_thread_1.join()
     capture_thread_2.join()
-    process_thread.join()
+    process_thread_1.join()
+    process_thread_2.join()
