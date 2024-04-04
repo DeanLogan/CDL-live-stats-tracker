@@ -2,3 +2,5 @@ venv
 *.avi
 random.txt
 training-data
+*.pyc
+*/__pycache__

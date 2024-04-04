@@ -140,33 +140,44 @@ def get_text(reader, bbox):
     result = reader.readtext(npArray)
     return result
 
-def capture_killfeed(q, bboxes, driver, reader):
+def capture_killfeed(q, bbox, driver):
     print("Capture thread started")
     while True:
         screenshot = driver.get_screenshot_as_png()
         image = Image.open(io.BytesIO(screenshot))
-        for bbox in bboxes:
-            roi = image.crop(bbox)
-            npArray = np.array(roi)
-            result = reader.readtext(npArray)
-            if len(result) > 1:
-                q.put(result)
+        roi = image.crop(bbox)
+        result = np.array(roi)
+        if len(result) > 1:
+            q.put(result)
 
 
-def process_images(q):
+def process_images(q, reader):
     print("Process thread started")
     players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
     while True:
-        try:
-            result = q.get()
-            if len(result) > 1:
-                current_kill = similar(players, result[0][1]) + " " + similar(players, result[1][1])
-                if (not killfeed.get(current_kill, False)) and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
-                    killfeed[current_kill] = True
-                    print(current_kill)
-                    kill(current_kill)
-        except:
-            continue
+        result = q.get()
+        estimated_words = reader.readtext(result)
+        if len(estimated_words) > 1:
+            current_kill = similar(players, estimated_words[0][1]) + " " + similar(players, estimated_words[1][1])
+            if (not killfeed.get(current_kill, False)) and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
+                killfeed[current_kill] = True
+                print(current_kill)
+                kill(current_kill)
+
+def test_capture_and_process(bbox, driver, reader):
+    players=["itoriscrap", "itoricleanx", "itoriinsight", "itorienvoy", "iseaihuke", "iseaiabuzah", "iseaiarcitys", "iseaibreszy"]
+    while True:
+        screenshot = driver.get_screenshot_as_png()
+        image = Image.open(io.BytesIO(screenshot))
+        roi = image.crop(bbox)
+        npArray = np.array(roi)
+        result = reader.readtext(npArray)
+        if len(result) > 1:
+            current_kill = similar(players, result[0][1]) + " " + similar(players, result[1][1])
+            if (not killfeed.get(current_kill, False)) and current_kill[0] != "?" and current_kill[len(current_kill)-1] != "?":
+                killfeed[current_kill] = True
+                print(current_kill)
+                kill(current_kill)
 
 def kill(current_kill):
     current_kill_split = current_kill.split(" ")
@@ -198,16 +209,31 @@ if __name__ == "__main__":
 
     driver = setup_browser()
 
-    bboxes = [(44, 637, 365, 667),(44, 610, 365, 640)]
+    bboxes = [(44, 637, 365, 667),(44, 610, 365, 640),(44, 637, 365, 667),(44, 610, 365, 640)]
 
-    capture_thread_1 = threading.Thread(target=capture_killfeed, args=(q,bboxes, driver, reader,))
-    capture_thread_2 = threading.Thread(target=capture_killfeed, args=(q,bboxes, driver, reader,))
-    process_thread_1 = threading.Thread(target=process_images, args=(q,))
+    for bbox in bboxes:
+        thread = threading.Thread(target=capture_killfeed, args=(q, bbox, driver))
+        thread.start()
 
-    capture_thread_1.start()
-    process_thread_1.start()
-    capture_thread_2.start()
+    for i in range(0, len(bboxes)):
+        thread = threading.Thread(target=process_images, args=(q, reader))
+        thread.start()
 
-    capture_thread_1.join()
-    process_thread_1.join()
-    capture_thread_2.join()
+    # thread1 = test_capture_and_process((44, 637, 365, 667), driver, reader)
+    # thread2 = test_capture_and_process((44, 610, 365, 640), driver, reader)
+    # thread1.start()
+    # thread2.start()
+    # thread1.join()
+    # thread2.join()
+
+    # capture_thread_1 = threading.Thread(target=capture_killfeed, args=(q,bboxes, driver, reader,))
+    # capture_thread_2 = threading.Thread(target=capture_killfeed, args=(q,bboxes, driver, reader,))
+    # process_thread_1 = threading.Thread(target=process_images, args=(q,))
+
+    # capture_thread_1.start()
+    # process_thread_1.start()
+    # capture_thread_2.start()
+
+    # capture_thread_1.join()
+    # process_thread_1.join()
+    # capture_thread_2.join()

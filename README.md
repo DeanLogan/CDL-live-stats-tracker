@@ -1,3 +1,5 @@
+# 🏗️ 🚧 UNDER CONSTRUCTION 🚧 🏗️
+
 # CDL Live Stat Tracker (Work In Progress)
 
 This project is dedicated to providing real-time statistics for Call of Duty League (CDL) games. CDL is the esports platform for Call of Duty. 
