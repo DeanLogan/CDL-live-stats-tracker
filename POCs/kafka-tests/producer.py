@@ -14,7 +14,7 @@ from confluent_kafka import Producer
 
 p = Producer({'bootstrap.servers': 'localhost:9092'})
 
-for i in range(100):
-    p.produce('test', 'message %d' % i)
+while True:
+    p.produce('test', 'message every 15 seconds')
     p.flush()
-    time.sleep(1)
+    time.sleep(15)

@@ -4,3 +4,5 @@ random.txt
 training-data
 *.pyc
 */__pycache__
+backend/node-server/node_modules
+notes.txt
