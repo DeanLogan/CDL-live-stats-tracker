@@ -1,0 +1,13 @@
+{
+  "name": "kafka-consumer",
+  "version": "1.0.0",
+  "description": "Node.js Kafka Consumer",
+  "main": "server.mjs",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "dependencies": {
+    "express": "^4.17.1",
+    "kafkajs": "^2.1.0"
+  }
+}
