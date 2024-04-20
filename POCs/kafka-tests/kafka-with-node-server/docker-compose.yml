@@ -5,6 +5,22 @@ services:
     image: bitnami/kafka
     ports:
       - "9092:9092"
+    networks:
+      - kafka-network
+    environment:
+      - KAFKA_CFG_ZOOKEEPER_CONNECT=zookeeper:2181
+      - ALLOW_PLAINTEXT_LISTENER=yes
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:9092
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+
+  zookeeper:
+    image: bitnami/zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+    - kafka-network
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
 
   producer:
     build:
@@ -12,6 +28,10 @@ services:
       dockerfile: producer/Dockerfile
     ports:
       - "9093:9092"
+    networks:
+    - kafka-network
+    depends_on:
+      - kafka
 
   consumer:
     build:
@@ -19,5 +39,11 @@ services:
       dockerfile: consumer/Dockerfile
     ports:
       - "3000:3000"
+    networks:
+      - kafka-network
     depends_on:
       - producer
+
+networks:
+  kafka-network:
+    driver: bridge

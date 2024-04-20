@@ -6,7 +6,7 @@ const port = 3000;
 
 const kafka = new Kafka({
     clientId: 'my-app',
-    brokers: ['localhost:9092']
+    brokers: ['kafka:9092']
 });
 
 const consumer = kafka.consumer({ groupId: 'test-group' });

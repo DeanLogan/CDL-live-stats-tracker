@@ -1,5 +1,5 @@
 # Dockerfile for Python Kafka Producer
-FROM python:3.9-slim
+FROM python:3.12.2-slim
 
 # Set up working directory
 WORKDIR /app
