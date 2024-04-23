@@ -1,13 +1,13 @@
 import time
 from confluent_kafka import Producer
 
-bootstrap_servers = 'localhost:9092' 
+bootstrap_servers = 'kafka:9092' 
 print(f'Connecting to {bootstrap_servers}')
 
 p = Producer({'bootstrap.servers': bootstrap_servers})
 
 while True:
-    p.produce('test', 'message every 15 seconds')
-    print('message sent')
+    p.produce('test', 'message every 1 second')
     p.flush()
-    time.sleep(15)
+    print('message sent')
+    time.sleep(1)
