@@ -28,13 +28,12 @@ services:
     image: alpine
     networks:
       - kafka-network
-    command: /bin/sh -c "while true; do sleep 60; done"
+    command: /bin/sh -c "apk add --no-cache kafkacat && while true; do sleep 60; done"
 
   producer:
     build:
       context: .
       dockerfile: producer/Dockerfile
-    entrypoint: ["./wait-for-kafka.sh"]
     ports:
       - "9094:9092"
     networks:
@@ -46,7 +45,6 @@ services:
     build:
       context: .
       dockerfile: consumer-py/Dockerfile
-    entrypoint: ["./wait-for-kafka.sh"]
     ports:
       - "3000:3000"
     networks:

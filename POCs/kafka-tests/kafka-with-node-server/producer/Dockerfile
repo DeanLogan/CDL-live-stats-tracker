@@ -15,9 +15,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY /producer/producer.py .
 
 # Copy the wait for kafka command that will be used to wait for the kafka broker to be ready
-COPY /wait-for-kafka.sh .
-RUN chmod +x ./wait-for-kafka.sh
-ENTRYPOINT ["./wait-for-kafka.sh"]
+# COPY /wait-for-kafka.sh .
+# RUN chmod +x ./wait-for-kafka.sh
 
-# Command to run the Python producer
-CMD ["python", "producer.py"]
+# Command to run the waiting script and the Python producer
+ENTRYPOINT ["python", "-u", "producer.py"]

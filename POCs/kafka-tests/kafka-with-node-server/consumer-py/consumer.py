@@ -1,9 +1,13 @@
 from confluent_kafka import Consumer, KafkaException
+import time
+
+time.sleep(15)
 
 c = Consumer({
     'bootstrap.servers': 'kafka:9092',
     'group.id': 'mygroup',
-    'auto.offset.reset': 'earliest'
+    'auto.offset.reset': 'earliest',
+    'session.timeout.ms': 30000
 })
 
 c.subscribe(['test'])
