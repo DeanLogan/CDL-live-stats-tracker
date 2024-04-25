@@ -30,6 +30,21 @@ function App() {
     ];
     setRows(data);
   }, []);
+
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    const ws = new WebSocket('ws://localhost:8080');
+
+    ws.onmessage = function (event) {
+      setMessage(JSON.parse(event.data).message);
+    };
+
+    return () => {
+      ws.close();
+    };
+  }, []);
+
   return (
     <>
       <h1>CDL Live Stat Tracker</h1>
@@ -38,6 +53,10 @@ function App() {
       </div>
       <div className="card">
         <CustomizedTables rows={rows}/>
+      </div>
+      <div className="server-test">
+          <h2>WebSocket Example</h2>
+          <p>{message}</p>
       </div>
     </>
   )
