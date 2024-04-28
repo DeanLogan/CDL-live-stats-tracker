@@ -60,8 +60,8 @@ def get_players(reader, team1_tag, team2_tag):
     players = [name[0].lower() for name in db.fetchall()]
     conn.close()
 
-    team1_players = get_text(reader, (203, 310, 537, 326)) # TODO update these values
-    team2_players = get_text(reader, (940, 310, 1274, 326)) # TODO update these values
+    team1_players = get_text(reader, (134, 166, 650, 197)) 
+    team2_players = get_text(reader, (1266, 168, 1788, 197))
 
     add_players_to_dicts(team1_players, players, team1_tag)
     add_players_to_dicts(team2_players, players, team2_tag)
@@ -82,8 +82,8 @@ def get_teams(driver):
     conn.close()
     while True:
         try:
-            team1 = similar(team_names, get_text(driver, (200, 212, 537, 239))[0][1]) # TODO update these values
-            team2 = similar(team_names, get_text(driver, (940, 212, 1275, 242))[0][1]) # TODO update these values
+            team1 = similar(team_names, get_text(driver, (133, 18, 653, 64))[0][1]) 
+            team2 = similar(team_names, get_text(driver, (1266, 17, 1788, 64))[0][1]) 
         except:
             continue
         if team1 != "?" and team2 != "?":

@@ -16,27 +16,8 @@ from selenium.webdriver.common.action_chains import ActionChains
 
 killfeed = ExpiringDict(max_len=9, max_age_seconds=5.5)
 
-kills = {
-    "itoriscrap": 2,
-    "itoricleanx": 6,
-    "itoriinsight": 2,
-    "itorienvoy": 2,
-    "iseaihuke": 4,
-    "iseaiabuzah": 2,
-    "iseaiarcitys": 5,
-    "iseaibreszy": 5
-}
-
-deaths = {
-    "itoriscrap": 4,
-    "itoricleanx": 3,
-    "itoriinsight": 4,
-    "itorienvoy": 5,
-    "iseaihuke": 4,
-    "iseaiabuzah": 5,
-    "iseaiarcitys": 0,
-    "iseaibreszy": 3
-}
+kills = {}
+deaths = {}
 
 CLAN_TAGS = {
     "toronto ultra": "itori",
@@ -60,8 +41,11 @@ def get_players(reader, team1_tag, team2_tag):
     players = [name[0].lower() for name in db.fetchall()]
     conn.close()
 
-    team1_players = get_text(reader, (203, 310, 537, 326)) # TODO update these values
-    team2_players = get_text(reader, (940, 310, 1274, 326)) # TODO update these values
+    team1_players = get_text(reader, (134, 166, 650, 197)) 
+    team2_players = get_text(reader, (1266, 168, 1788, 197))
+
+    print(f"====== {team1_players}")
+    print(f"====== {team2_players}")
 
     add_players_to_dicts(team1_players, players, team1_tag)
     add_players_to_dicts(team2_players, players, team2_tag)
@@ -80,11 +64,12 @@ def get_teams(driver):
     db.execute("SELECT name FROM Team")
     team_names = [name[0].lower() for name in db.fetchall()]
     conn.close()
+    team1, team2 = "?", "?"
     while True:
         try:
-            team1 = similar(team_names, get_text(driver, (200, 212, 537, 239))[0][1]) # TODO update these values
-            team2 = similar(team_names, get_text(driver, (940, 212, 1275, 242))[0][1]) # TODO update these values
-        except:
+            team1 = similar(team_names, get_text(driver, (133, 18, 653, 64))[0][1]) 
+            team2 = similar(team_names, get_text(driver, (1266, 17, 1788, 64))[0][1]) 
+        except Exception as e:
             continue
         if team1 != "?" and team2 != "?":
             break
@@ -97,7 +82,7 @@ def setup_browser():
     driver = webdriver.Firefox()
     driver.set_window_size(1920, 1080)
     driver.install_addon('uBlock0_1.56.1rc5.firefox.signed.xpi', temporary=True) # adding ublock ad blocker
-    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64&t=164s" # add this to test for double kills, wait until video is at 3:03 and compare killfeed "&t=164s"
+    url = "https://www.youtube.com/watch?v=FjclYlb8dRY&list=WL&index=64" # add this "&t=164s" to test for double kills, wait until video is at 3:03 and compare killfeed 
     driver.get(url)
     print("video loaded")
     time.sleep(3) # waits for the video to load
@@ -208,6 +193,17 @@ if __name__ == "__main__":
     q = queue.Queue()
 
     driver = setup_browser()
+
+    print("browser setup, trying to get team names")
+
+    team1, team2 = get_teams(reader)
+
+    print(team1, team2)
+
+    get_players(reader, CLAN_TAGS[team1], CLAN_TAGS[team2])
+
+    for player in kills:
+        print(player)
 
     bboxes = [(44, 637, 365, 667),(44, 610, 365, 640),(44, 637, 365, 667),(44, 610, 365, 640)]
 
