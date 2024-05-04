@@ -22,7 +22,7 @@ team_names_website = {
 # /html/body/div[2]/div/div/div[3]/div/a[1]/div[2]/div/div[2] - xpath of player tags on website
 # class="roster-cardstyles__PlayerTag-sc-6tmgp0-4 fVsAmy" - class of player tags on website
 # class="roster-cardstyles__PlayerName-sc-6tmgp0-3" - class of player names on website
-def get_roster(team_name):
+def get_offical_roster(team_name):
     driver = webdriver.Firefox()
     driver.get(f"https://{team_name}.callofdutyleague.com/en-us/roster") # each team has a different url for their roster
 
@@ -34,16 +34,41 @@ def get_roster(team_name):
     time.sleep(1) 
     players_name = [player.text.lower() for player in elements_of_players_names]
     
-    print("worked?")
     driver.close()
+    return players_handle, players_name
 
-def replace_roster_in_db():
+def update_db_with_offical_roster(team_name):
     conn = sqlite3.connect('cdl-database.db')
     db = conn.cursor()
-    db.execute("SELECT name FROM Team")
-    print(db.fetchall())
+    db.execute("SELECT handle FROM Player WHERE team_name = ?", (team_names_website[team_name],))
+    players = [handle[0].lower() for handle in db.fetchall()]
+    website_players, names = get_offical_roster(team_name)
+    differences = find_differences_in_roster(players, website_players)
+    for player in differences:
+        if player[1] == "db":
+            db.execute("UPDATE Player SET team_name = 'null' WHERE handle = ?", (player[0],))
+        else:
+            if db.execute("SELECT * FROM Player WHERE handle = ?", (player[0],)).fetchone() is not None:
+                db.execute("UPDATE Player SET team_name = ? WHERE handle = ?", (team_names_website[team_name], player[0]))
+            else:
+                db.execute("INSERT INTO Player (?, ?, ?, ?, ?, ?, ?, ?)", (player[0], names[player[2]], "United States", 0, 0, 0, 0, team_names_website[team_name]))
     conn.close()
 
+def find_differences_in_roster(in_db_players, website_players):
+    set1 = set(in_db_players)
+    set2 = set(website_players)
+    differences = []
+
+    for item in set1.difference(set2):
+        index = in_db_players.index(item)
+        differences.append((item, "db", index))
+
+    for item in set2.difference(set1):
+        index = website_players.index(item)
+        differences.append((item, "website", index))
+
+    return differences
+
 if __name__ == "__main__":
-    # get_roster("faze") 
-    replace_roster_in_db()
+    # get_offical_roster("faze") 
+    update_db_with_offical_roster("breach")
