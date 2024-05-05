@@ -1,7 +1,6 @@
 import time
-from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
 import sqlite3
+from selenium import webdriver
 
 
 team_names_website = {
@@ -45,9 +44,11 @@ def update_db_with_offical_roster(team_name):
     website_players, names = get_offical_roster(team_name)
     differences = find_differences_in_roster(players, website_players)
     for player in differences:
+        # if the player is within the db and nolonger on the website, remove the team name
         if player[1] == "db":
             db.execute("UPDATE Player SET team_name = 'null' WHERE handle = ?", (player[0],))
         else:
+            # if the player is on the website but not in the db, add the player to the db, else update the team name of the player
             if db.execute("SELECT * FROM Player WHERE handle = ?", (player[0],)).fetchone() is not None:
                 db.execute("UPDATE Player SET team_name = ? WHERE handle = ?", (team_names_website[team_name], player[0]))
             else:
