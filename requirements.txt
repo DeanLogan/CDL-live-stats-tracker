@@ -13,4 +13,5 @@ opencv-python-headless
 selenium
 kafka-python
 confluent-kafka
+schedule
 # pip install torch torchvision torchaudio cudatoolkit=12.3 -f https://download.pytorch.org/whl/torch_stable.html
