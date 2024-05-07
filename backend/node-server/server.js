@@ -1,6 +1,7 @@
 const express = require('express');
 const http = require('http');
 const WebSocket = require('ws');
+const { deflate } = require('zlib');
 
 const app = express();
 const server = http.createServer(app);
@@ -17,7 +18,26 @@ wss.on('connection', function connection(ws) {
     let counter = 0;
     const interval = setInterval(() => {
         counter++;
-        ws.send(JSON.stringify({ message: `Hello from server! Message number: ${counter}` }));
+        ws.send(JSON.stringify(
+            {
+                message: `Game update ${counter}`,
+                players: [
+                    {
+                        name: 'Player 1',
+                        kills: counter,
+                        deaths: 1,
+                        KD: 0
+                    },
+                    {
+                        name: 'Player 2',
+                        kills: 0,
+                        deaths: counter,
+                        KD: 0
+                    }
+                ]
+            }
+        )
+    );
     }, 1000);
 
     ws.on('close', function close() {

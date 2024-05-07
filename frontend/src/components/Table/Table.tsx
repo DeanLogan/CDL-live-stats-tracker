@@ -27,7 +27,7 @@ const StyledTableRow = styled(TableRow)(({ theme }) => ({
   },
 }));
 
-interface RowData {
+export interface RowData {
   player: string;
   kill: number;
   death: number;
@@ -38,7 +38,7 @@ interface TableProps {
   rows: RowData[];
 }
 
-export default function CustomizedTables({ rows }: TableProps) {
+export function CustomizedTables({ rows }: TableProps) {
   return (
     <TableContainer component={Paper}>
       <Table sx={{ minWidth: 700 }} aria-label="customized table">
