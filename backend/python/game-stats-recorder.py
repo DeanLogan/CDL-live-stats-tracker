@@ -10,14 +10,16 @@ from PIL import ImageGrab, Image
 from difflib import SequenceMatcher
 from expiringdict import ExpiringDict
 from selenium.webdriver.common.by import By
+from confluent_kafka import Producer, KafkaException
 from selenium.webdriver.firefox.options import Options
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.common.action_chains import ActionChains
 
 killfeed = ExpiringDict(max_len=9, max_age_seconds=5.5)
 
-kills = {}
-deaths = {}
+team1, team2 = ""
+
+kills, deaths = {}
 
 CLAN_TAGS = {
     "toronto ultra": "itori",
@@ -170,6 +172,13 @@ def kill(current_kill):
     killed = current_kill_split[1]
     kills[killer] += 1
     deaths[killed] += 1
+    p.produce('test', {
+        "team1":team1,
+        "team2":team2,
+        "killRecord":kills, 
+        "deathRecord":deaths,
+        })
+    p.flush()
 
 def similar(similar_words, str):
     most_similar = "?"
@@ -188,6 +197,24 @@ def kd():
         print(player + " " + str(kills[player]) + " / " + str(deaths[player]))
 
 if __name__ == "__main__":
+    # start the kafka producer server
+    while True:
+        bootstrap_servers = 'kafka:9092' 
+        print(f'Connecting to {bootstrap_servers}')
+
+        p = Producer({'bootstrap.servers': bootstrap_servers})
+
+        try:
+            # Try to flush the messages. If it returns 0, break the loop.
+            if p.flush(timeout=10.0) == 0:
+                print('Connected successfully.')
+                break
+        except KafkaException as e:
+            print(f'Failed to connect: {e}')
+            time.sleep(5)
+            continue
+
+    # start selenium to "watch" the match
     print("starting selenium and easyocr script")
     reader = easyocr.Reader(['en'])
     q = queue.Queue()
