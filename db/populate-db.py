@@ -1,6 +1,6 @@
 import sqlite3
 
-conn = sqlite3.connect('cdl-database.db')
+conn = sqlite3.connect('db/cdl-database.db')
 db = conn.cursor()
 
 # Team information to be added

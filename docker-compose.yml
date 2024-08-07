@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  zookeeper:
+    image: zookeeper
+    ports:
+      - "2181:2181"
+    networks:
+      - kafka-network
+
+  kafka:
+    image: bitnami/kafka
+    ports:
+      - "9092:9092"
+    networks:
+      - kafka-network
+    environment:
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092
+      KAFKA_ADVERTISED_HOST_NAME: kafka
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: 'true'
+      KAFKA_CREATE_TOPICS: "test:1:1"
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+    depends_on:
+      - zookeeper
+
+  backend-db:
+    build:
+      context: .
+      dockerfile: db/Dockerfile
+    networks:
+      - kafka-network
+    depends_on:
+      - kafka
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+    ports:
+      - "3000:3000"
+    networks:
+      - kafka-network
+    depends_on:
+      - backend-db
+
+  python-service:
+    build:
+      context: .
+      dockerfile: backend/python/Dockerfile
+    networks:
+      - kafka-network
+    depends_on:
+      - kafka
+
+  node-server:
+    build:
+      context: .
+      dockerfile: backend/node-server/Dockerfile
+    ports:
+      - "8080:8080"
+    networks:
+      - kafka-network
+    depends_on:
+      - kafka
+
+networks:
+  kafka-network:
+    driver: bridge

@@ -26,30 +26,33 @@ wss.on('connection', function connection(ws) {
     console.log('Client connected');
 
     ws.on('message', function incoming(message) {
-        let team1Name = message.team1;
-        let team2Name = message.team2;
+        const parsedMessage = JSON.parse(message);
+        let team1Name = CLAN_TAGS_TO_DISPLAY_NAME[parsedMessage.team1];
+        let team2Name = CLAN_TAGS_TO_DISPLAY_NAME[parsedMessage.team2];
         let team1Arr = [];
         let team2Arr = [];
         console.log('received: %s', message);
         
-        for (const key in message.kills) {
-            if (message.kills.hasOwnProperty(key)) {
+        const playerDataForTables = {};
+
+        for (const key in parsedMessage.kills) {
+            if (parsedMessage.kills.hasOwnProperty(key)) {
                 let name = key.substring(4, key.length - 1);
                 playerDataForTables[name] = {
                     name: name,
-                    kills: message.kills[key],
+                    kills: parsedMessage.kills[key],
                     deaths: 0,
                     kd: 0,
                 };
             }
         }
         
-        for (const key in message.deaths) {
-            if (message.deaths.hasOwnProperty(key)) {
+        for (const key in parsedMessage.deaths) {
+            if (parsedMessage.deaths.hasOwnProperty(key)) {
                 let name = key.substring(4, key.length - 1);
-                playerDataForTables[name].deaths = message.deaths[key];
-                playerDataForTables[name].kd = playerDataForTables[name].kills / message.deaths[key];
-                if (CLAN_TAGS_TO_DISPLAY_NAME[key.substring(0, 3)] === team1Name) {
+                playerDataForTables[name].deaths = parsedMessage.deaths[key];
+                playerDataForTables[name].kd = playerDataForTables[name].kills / parsedMessage.deaths[key];
+                if (parsedMessage.team1.includes(name)) {
                     team1Arr.push(playerDataForTables[name]);
                 } else {
                     team2Arr.push(playerDataForTables[name]);
@@ -60,6 +63,8 @@ wss.on('connection', function connection(ws) {
         // Send message to the client
         ws.send(JSON.stringify({
             message: 'Game update',
+            team1Name: team1Name,
+            team2Name: team2Name,
             team1: team1Arr,
             team2: team2Arr
         }));

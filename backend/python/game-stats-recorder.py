@@ -37,7 +37,7 @@ CLAN_TAGS = {
 }
 
 def get_players(reader, team1_tag, team2_tag):
-    conn = sqlite3.connect('cdl-database.db')
+    conn = sqlite3.connect('db/cdl-database.db')
     db = conn.cursor()
     db.execute("SELECT handle FROM Player")
     players = [name[0].lower() for name in db.fetchall()]
